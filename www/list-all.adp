@@ -1,4 +1,4 @@
-<master src="master">
+<master>
 <property name="title">All Content</property>
 <property name="context">"All Content"</property>
 

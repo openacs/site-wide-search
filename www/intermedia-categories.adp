@@ -1,4 +1,4 @@
-<master src="master">
+<master>
 <property name="title">The categories for '@title@'</property>
 <property name="context">categories</property>
 
