@@ -1,5 +1,5 @@
 <master>
-<property name="title">The categories for '@title@'</property>
+<property name="title">The categories for '@title;noquote@'</property>
 <property name="context">categories</property>
 
 <if @intermedia_categories_list:rowcount@ gt 0>
