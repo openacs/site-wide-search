@@ -1,0 +1,68 @@
+<html>
+<head>
+<title> SWS Documents 
+</title>
+</head>
+<body bgcolor=white>
+<h2> Site Wide Search Documents </h2>
+by <a href="khy@arsdigita.com">Khy Huang</a>
+<hr>
+
+<h3> To install/upgrade/remove package, please read the sws-install.sql under the sql directory </h3>
+<br>
+<b>Documents: </b><br>
+<ul>
+   <li> <a href=requirements> Sie Wide Search (Req) </a>
+   <li> <a href=design> Site Wide Search (Design) </a>
+   <li> <a href=how-to> How To Add Content for Site Wide Search</a>
+</ul>
+
+
+
+<br>
+<h3>Release Notes for SWS 4.0.1 (02/09/2001) </h3>
+<br>
+<b>New & Bug fixes</b>4
+<ul>
+<li> Upgraded content-revision type support. Applications registers the 
+'cr_revision_in_package_id' attribute with pot_service. The attribute specifies 
+a function that returns the package id for a revision.  The function should 
+return the package instance that is referencing the revision. Note:
+the function should check for a specific application's instance, not other 
+application instance. (i.e. file-storage application has a function 
+fs_cr_revision_content that takes one parameter, revision_id, and returns the 
+file-storage package instance that references the revision_id (if any)) </li>
+<li> Removed all package dynamic sql, instead used native dynamic sql for 
+performance and readability issues. </li> 
+<li> Add search support for additional packages:
+     <ol>
+     <li> <i>news</i> - Add support for news article. Run the news-sws.sql.</li>
+     <li> <i>bboard</i> - Add support for bboard postings. Run bboard.sql and 
+           put search-redirect.tcl (under site-wide-search/www dir) in the 
+           bboard directory.   </li>
+     <li> <i>file-storage</i> - Add support for file-storage files. Run 
+             file-storage-sws.sql. </li>
+     </ol> </li>
+<li> Installation: Modify population of acs_content and sws_search_contents 
+tables. Instead of looping through rows using cursors, it uses insert-select 
+statement. 
+  </li>
+<li> Internationalization: In im_convert function, modify the 'char' variable to 
+use 2 varchar size to support character sets that take up two bytes.</li>
+</ul>
+<br>
+<b> Known Issues </b>
+<ul>
+    <li> Internationalization characters are not searchable yet. Working on it. </li>
+    <li> Performance tunning needed for large traffic sites </li>
+</ul>
+</body>
+</html>
+
+
+
+
+
+
+
+

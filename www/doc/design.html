@@ -1,0 +1,505 @@
+<html>
+<head>
+<title> Designs </title>
+</head>
+<body bgcolor=white>
+<h2>
+Site Wide Search Design Document </h2>
+by <a href="khy@arsdigita.com">Khy Huang</a>
+<hr>
+
+<h3> 
+I. Essentials </h3>
+<ul>
+    <li> User Directory: <a href=/site-wide-search>/site-wide-search</a>
+    <li> Admin Directory: <a href=/site-wide-search/admin>/side-wide-search/admin</a>
+    <li> Requirements document: <a href=requirements>Requirements</a>
+    <li> Data model: <a href="/doc/sql/display-sql?url=site-wide-search-create.sql&package_key=site-wide-search">site-wide-search-create.sql</a>, <a href="/doc/sql/display-sql?url=context-setup-create.sql&package_key=site-wide-search">context-setup-create.sql</a>, <a href="/doc/sql/display-sql?url=search-tables-create.sql&package_key=site-wide-search">site-wide-search-create.sql</a>
+    <li> ACS Contents
+</ul>
+
+<h3> 
+II. Introduction </h3>
+
+Site Wide Search (SWS) provides searching capability for web site content.
+It supports sub-sites, application selections, and permissions
+checking.  There are two types of users within site wide search,
+developer and end user.  The developer needs to be able to specify
+application data which should be available to site wide search,
+whereas the end user needs a general search tool with a reasonable set of
+basic search primitives (i.e. boolean logic, themes, keywords) to
+find relevant content.  Developers will need to have a firm grasp on
+ACS 4 architecture in order to set up SWS to produce the correct display
+and support for sub-sites.  There is a SWS framework to follow for
+including data for searching. The frame work guidelines are discussed
+under the Configuration section.
+
+
+<h3>
+III. Historical Consideration </h3>
+ 
+The pre-ACS 4.0 version of Site Wide Search required application
+developers to write triggers or procedures to construct content for
+Oracle Intermedia to index.  An advantage of having a procedure
+construct the data in this way is that applications may then choose to
+have other pieces of information included in addition to or in place
+of the body of the search context, such as keywords.  The new
+SWS indexes data from the acs_contents table. However, object types
+may implement an interface with a method that provides the data to be
+indexed in place of the content in acs_contents. Most applications
+will default to search using the content stored in ACS_contents.
+Currently in ACS 4.x, there is a Content Reposistory (CR)
+system that stores the content in the cr_revision table. In a future release, 
+CR will use the acs_contents for storing its data.  The interim 
+solution, for CR to include its content in SWS, is
+to use the interface.
+<p> Previously, the SWS setup script had to be run separately to
+avoid the namespace collision in ctxsys schema for each ACS
+installation, as the naming of procedures are unique within the ctsxys
+schema, e.g., when installing development, staging, and production
+under the same Oracle DB with different schemas. The new setup script
+addresses the namespace collision problem by using a mapping table for
+the procedure names for each schema.
+
+<h3>
+IV. Competitive Analysis </h3> 
+
+General search engines such as Google and Altavista are great for
+finding content on the Web, however these search tools do not have
+access to information about the framework of a web site such as access
+control.  For example, users may receive a set of links from a search
+that they do not have access to view.  It is frustrating for users to
+click on the link only to get an access denied page.  Thus, at the
+level of performing an internal site wide search, there is a room to
+improve on search functionality by employing a tool that is
+architecture-aware.  SWS is now specifically designed for the ACS 4.x
+architectur and as such is aware of the internal framework
+(i.e. permissions, sub-sites, applications, etc..).  As a result, the
+SWS will only return results that are live and accessible to the user
+performing the search in question. In addition, the result set can be
+displayed in a manner that reflects the structure of the site, such as
+displaying the results by sub-sites or applications.
+
+
+<h3> 
+V.Design Tradeoffs </h3>
+
+<b>10.20 Storing information vs. Interface</b> <p>
+
+In the previous
+version of SWS, the link and title of the content was stored in a
+table.  If the piece of content was returned from a search, the
+display on the page would be the title of the content hyperlinked to
+the stored link. Under the ACS 4 framework, storing the title and
+hyperlink for each content (object) is not feasible since the object
+could be referenced by multiple applications. Even if the object was
+referenced by only one application, this would still not resolve the
+issue as to where the title should be hyperlinked. Under the APM,
+applications can be mapped to multiple site nodes.  The solution is to
+require object_types interested in being searchable to implement the
+'sws_display' interface. The 'sws_display' interface consist of six
+methods (sws_application_id, sws_site_node_id, sws_req_permission,
+sws_link, sws_title, sws_summary). Object types will use these methods to help SWS determine under which application and site node relevant content should be referenced. <p>
+
+<b>10.30 Tcl vs. PL/SQL Interface </b> <p>
+
+We went through some discussion as to whether we should have the
+interfaces implemented in the TCL or PL/SQL environment.  Our main
+concerns were the performance issue as well as  providing presentation layer
+information.  The performance issue concerned the display of the result
+set: to display a page that returns 50 rows, every row would result in
+a call to sws_title and sws_title (maybe sws_summary).  The PL/SQL
+procedure would be faster in getting the result compared to the TCL
+call.  The second issue was whether to have the PL/SQL layer provide
+presentation layer information, in this case the link to the content.
+To implement the interface call in TCL, namespaces would be
+used. Currently, there are bugs in the implementation of namespace
+under AOL Server.  To avoid these bugs and continue with development,
+the decision was made to have interfaces implemented in PL/SQL.  <p>
+
+<b>10.40 Partial Storage of content attribute information </b> <p>
+
+The implementation of the PL/SQL Interface uses dynamic SQL for each
+method call. Executing dynamic SQLs incurs a performance hit when
+running the search. Optimization is needed on the search query
+considering the length of time side wide search takes under ACS 3.4x
+without dynamic SQLs.  The solution to this is to remove all dynamic
+SQLs from the search query and store them in a separate table.  The
+current search query contains application id for grouping by
+applications, site node id for grouping by sub-site, and permission
+for access checking.  These three fields are stored in
+sws_search_contents when the content is marked as searchable or
+updated in acs_contents.  The disadvantage of storing in the table is
+the application_id, node id, and permission could be invalid when the
+search query runs, likely in a scenario in which an admin decides to
+reorganize the structure of the site nodes after operating a web site
+for awhile.  Currently the fix is to have a page for an administrator
+to reinitialize the content attributes after any changes to sites
+node. A more elegant approach would be to have a call back function for
+modifications to the site nodes. Unfortunately such a mechanism is not
+available under the current framework.
+
+<h3>
+VI. API </h3>
+
+The packages are organized into three layers, application, object type, and search.
+The application layer stores the application specific information for the object type, object type is the middle layer that provides information about the specific object type to the search layer, and the search layer provides querying and indexing of the data. 
+<p>
+<b> Application Layer </b><p>
+
+The application section consists of the Package Object Types (pot)
+package. It maintains attributes for object types within a package
+context. Currently only one attribute is specified: 
+'display_page'; packages register a display page for viewing an object
+type instance that was created within its context.  The display_page
+value is a relative URL template; the template is a get method
+requiring an object id for the suffix.  For example, the file-storage
+application would register "file?file_id=" as the display_page
+attribute value for the content-revision object type. This example
+assumes that the content-revision object type is used by the
+file-storage.
+
+The Package Object Type has the following associated methods:
+<pre>
+
+--  packages use these methods to register the object types in use
+    procedure register_object_type
+    procedure unregister_object_type 
+
+--  Currently only one attribute is defined, display_page
+    procedure create_attribute 
+    procedure drop_attribute 
+
+--  Packages that create new object types could specify the default attributes values using these methods
+    procedure set_default_attr_value 
+    procedure delete_default_attr_value 
+    function get_default_attr_value 
+
+--  Methods for packages to specify object type attribute values within the package context. 
+    procedure set_obj_type_attr_value ;
+    procedure delete_obj_type_attr_value;
+    function get_obj_type_attr_value;
+</pre>
+
+
+<p>
+<b> Object type layer</b>
+<p>
+
+This layer consists of object types implementing the sws_display and
+the optional sws_indexing interfaces.  In the PL/SQL environment, we
+make the assumption is that an ACS object type has a package with the
+same name.  An object type implementing an interface in PL/SQL means
+that the object type package contains all the methods defined by the
+interface and registers with the ACS Interface package.  Registering
+with ACS Interface consists in employing the 
+acs_interface.assoc_obj_type_with_interface procedure call.
+Another option, besides having the object type package provide the 
+interface methods, is to have another package provide the methods. 
+This avoids modifications to the object packages already in place.
+In the call to acs_interface.assoc_obj_type_with_interface there is 
+an optional parameter, object_type_imp, for specifying an external package
+that has the implementation. 
+
+<ul>
+<li>
+sws_display <br>
+<blockquote>
+The "sws_display" interface methods are used when retrieving an
+object's URL, display, and permission information.  The Search layer
+calls these methods in order to build the search result page.  There are six
+methods in the interface: <ol> <li> sws_title </li> <li> sws_summary
+</li> <li> sws_req_permission </li> <li> sws_site_node_id </li> <li>
+sws_application_id </li> <li> sws_url.  </li>
+</ol>
+The sws_title and sws_summary are used to display object information
+for the search result page. The sws_req_permission function is used to
+get the permission required to view object on the search page.  The
+last three functions are used to compute the URL at which to view the object
+type instance.  SWS has provided default implementations for the last
+three functions.  The last three functions use the ACS context tree
+and application layer pot service to compute an URL to display an
+object; ACS contexts are used to compute the site node and application
+context of an object, and the application layer stores the relative URL
+template for an object type.  The default implementation is located in
+sws_service_interface package.  Object types may call these methods
+directly.
+</blockquote>
+<li> 
+sws_indexing <br>
+<blockquote>
+The 'sws_indexing' interface provides a facility for object types to
+store searchable data in a different location than in the acs_contents
+table. An example is the content_revision object type in the ACS
+Content Repository service. The content_revision stores its data in
+cr_revision table. Instead of copying the data from cr_revision to
+acs_contents, the content_revision would implement the sws_indexing
+interface. When SWS is indexing the data, it will call the method in
+the "sws_indexing" interface for all the content_revision object type
+instance instead of using the data stored in
+acs_contents. </blockquote>
+</ul>
+
+<p>
+<b> Search Layer</b>
+<p>
+
+The Search layer uses Oracle Intermedia to index object type data.
+Rows in acs_contents table where the searchable_p column is 't' are
+indexed.  The content that actually gets indexed is dependent upon
+whether the object type supports the 'sws_indexing' interface as
+specified in the object type layer above. If the object type does not
+support the sws_indexing interface, then the data stored in the content column of acs_contents is used. If the object type supports the
+interface, the sws_indexing interface method within the originating object type
+package is called to get data for indexing.
+<p>
+
+There is one package for the Search layer, sws_service package.  There
+are methods to rebuild the indexes for recently updated and all data.
+Other methods are wrappers for calling the interface methods for an
+object type.
+<pre>
+    -- wrapper functions for calling object types' interface methods
+    function get_content_node_id (                                                 
+	content_id in sws_search_contents.content_id%TYPE                              
+    ) return sws_search_contents.node_id%TYPE;                                  
+
+    function get_content_application_id (                                          
+	content_id in sws_search_contents.content_id%TYPE                              
+    ) return sws_search_contents.application_id%TYPE;                           
+                                                                                
+    function get_content_permission (                                           
+	content_id in sws_search_contents.content_id%TYPE                              
+    ) return sws_search_contents.permission_req%TYPE;                           
+                                                                                
+    function get_content_url (                                                  
+	content_id in sws_search_contents.content_id%TYPE                              
+    ) return varchar2;                                                          
+                                                                                
+    function get_content_title (                                                
+	content_id in sws_search_contents.content_id%TYPE                              
+    ) return varchar2;                                                          
+                                                                                
+    function get_content_summary (                                              
+	content_id in sws_search_contents.content_id%TYPE                              
+    ) return varchar2;                                                          
+
+    procedure content_sws_index_proc (                                          
+	content_id  in sws_search_contents.content_id%TYPE,                            
+	bdata	    in out nocopy blob                                                   
+    );
+
+
+    -- wrapper function for 'sws_indexing' interface method
+    procedure sws_index_proc (                                                  
+	rid	    in rowid,                                                              
+	bdata	    in out nocopy blob                                                   
+    );                                                                          
+
+    -- procedure updates the application_id, node_id, 
+    -- and permission for an object
+    procedure update_content_info (                                             
+	content_id in sws_search_contents.content_id%TYPE                              
+    );                       
+                                                   
+    -- procedure updates the application_id, node_id,
+    -- and permission for all object types
+    procedure update_content_obj_type_info (
+	object_type in acs_object_types.object_type%TYPE
+    );
+
+    -- rebuilds index for the content, since the last time index was ran.
+    procedure rebuild_index;
+
+    -- reindexes all content      
+    procedure rebuild_all_index;
+</pre>
+
+<h3>
+
+VII. Data Model Discussion  </h3>
+
+<b> Intermedia Setup </b> <p>
+
+Intermedia setup consists of a table named sws_procedures and a package named
+sws_procedure that stores the mapping of the desired procedure name
+to a generated one in ctxsys schema and procedure creation/deletion
+functionality under ctxsys schema, respectively. This enables each ACS
+installation to use the same procedure name within the Ctxsys schema.
+<p>
+The procedure mapping table sws_procedures is as follows:
+<pre>
+create table sws_procedures (
+    procedure_id		integer 
+	constraint sws_proc_proc_id_pk primary key,
+    schema			varchar2(30)
+	constraint sws_proc_schema_nn not null,
+    procedure_name		varchar2(20)
+	constraint sws_proc_proc_name_nn not null,
+    actual_procedure_name	varchar2(30)
+	constraint sws_proc_act_proc_name_nn not null,
+    creation_date		date
+	constraint sws_creation_date_nn not null,
+    constraint sws_proc_schema_proc_name_un unique (schema, procedure_name)
+);
+</pre>
+
+The sws_procedure package is as follows:
+<pre>
+
+	    function create_procedure (
+		schema		    in sws_procedures.schema%TYPE,
+		procedure_name      in sws_procedures.procedure_name%TYPE,
+		call_procedure	    in varchar2
+	    ) return varchar2;
+
+	    procedure drop_procedure (
+		schema		    in sws_procedures.schema%TYPE,
+		procedure_name      in sws_procedures.procedure_name%TYPE
+	    );
+
+	    function get_actual_procedure (
+		schema		    in sws_procedures.schema%TYPE,
+		procedure_name	    in sws_procedures.procedure_name%TYPE
+	    ) return sws_procedures.actual_procedure_name%TYPE;
+
+	    procedure clean_schema (
+		schema		in sws_procedures.schema%type
+	    );
+</pre>
+<br>
+The create_procedure method creates a procedure with the following
+signature: <i> procedure_<next_id> (rid in ROWID, bdata in out nocopy
+BLOB) </i><br> The new procedure calls the passed-in call_procedure
+parameter with rid and bdata as parameters.
+<p>
+
+<b> Site Wide Search </b> <p>
+
+There is one table, sws_search_contents. The table stores the
+content_id, application_id, and the required permission for each
+object.  The reason for storing these piece of information is to
+remove dynamic SQLs in the 'where' clause.
+
+<pre>
+create table sws_search_contents (
+    content_id		integer
+	constraint sws_search_content_id_pk primary key
+	constraint sws_search_content_id_fk references acs_contents(content_id) on delete cascade,
+    -- application that owns this content
+    application_id	integer
+	constraint sws_search_appl_id_fk references apm_applications on delete cascade,
+    node_id		integer
+	constraint sws_search_node_id_fk references site_nodes on delete cascade,
+    permission_req	varchar2(100),
+    data_store		char(1)	
+);
+</pre>
+
+<h3>
+VIII. User Interface </h3>
+
+The user interface is the index.adp page that includes the
+search-form.adp.  Search-form.adp provides users a form to enter key
+words and options for selecting subsites, search methods, and
+grouping.  The query is built, processed, and displayed by search.tcl.
+
+<h3>
+IX. Configuration/Parameters </h3>
+
+System Setup:
+<ul>
+   <li> Ensure that Oracle Intermedia is set up correctly with INSO
+   filter (For Linux INSO filter is only available with Oracle 8.1.7EE
+   and later) <li> Grant create procedure privilege to user under
+   current and ctxsys schema.  <li> Run the
+   intermedia-setup-create.sql under the ctxsys schema for each Oracle
+   Instance. Do not run this for every ACS installation on a Oracle
+   instance.
+</ul>
+
+Object type setup for site wide search: <p>
+
+Step 1: Object types that wants to be included in the scope of SWS
+must implement the sws_display interface.  This assumes there is a one
+to one mapping from package to object type name. <p>
+
+The object type consist of six methods:
+<ul>
+   <li> function get_application_id (object_id    in acs_object.object_id%type) return integer;
+   <li> function get_site_node_id (object_id    in acs_object.object_id%type) return integer;
+   <li> function get_req_permission (object_id    in acs_object.object_id%type) return varchar2;
+   <li> function get_title (object_id in acs_object.object_id%type) return varchar2; -- max 1000 char
+   <li> function get_summary (object_id in acs_object.object_id%type) return varchar2; - max 4000 char
+   <li> function get link (object_id in acs_object.object_id%type) return varchar2; - max 1000 char
+</ul>
+<p> 
+
+Step 2: Register the fact that the object type has implemented an
+interface <p> <ul><li>call acs_interface.assoc_obj_type_with_interface
+('sws_display', 'pl/sql', object_type);</ul>
+<p>
+Developers are encouraged to read the <a href=how-to>how-to </a> doc
+for an even more detailed step process for adding application content
+to the scope of SWS.
+
+<h3>
+X. Future Improvements </h3>
+<ul> 
+   <li> Administrator pages to tweak intermedia parameters
+   <li> Add parameters to specify which packages should be searched.
+   <li> More advanced search features 
+   <li> Call back function for modifications to site nodes
+   <li> Inclusion of content attributes for search
+</ul>
+
+<h3>
+XI. Authors </h3>
+
+
+<h3> 
+XII. Revision History </h3>
+<table CELLSPACING=2 CELLPADDING=2 WIDTH="90%" BGCOLOR="#EFEFEF" >
+<tr BGCOLOR="#E0E0E0">
+<th WIDTH="10%">Document Revision #</th>
+
+<th WIDTH="50%">Action Taken, Notes</th>
+
+<th>When?</th>
+
+<th>By Whom?</th>
+</tr>
+
+<tr>
+<td>0.1</td>
+<td>Created</td>
+<td>2000-11-28</td>
+<td>Khy Huang</td>
+</tr>
+
+<tr>
+<td>0.2</td>
+<td>First pass edit</td>
+<td>2000-12-19</td>
+<td>Josh Finkler</td>
+</tr>
+
+<tr>
+<td>0.3</td>
+<td>comment on object_type_imp</td>
+<td>2001-01-19</td>
+<td>Khy Huang</td>
+</tr>
+
+</table>
+</body>
+</html>
+
+
+
+
+
+
+
+
+

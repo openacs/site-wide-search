@@ -1,0 +1,423 @@
+<html>
+<head><title>
+How-To: Making Application Content Accessible to Site-Wide Search</title>
+</head>
+<body bgcolor=white>
+
+<h2> How-To: Making Application Content Accessible to Site-Wide
+Search</h2> by <a href="khy@arsdigita.com">Khy Huang</a>
+<hr>
+
+<h3> I. Introduction </h3> 
+
+This document explains how to make application content accessible to
+the Site Wide Search (SWS) package.  Site maintainers are encouraged
+to read the <a href="design">design</a> doc for more information on
+the structure of the SWS package.  <p>
+
+There are essentially two different scenarios in which developers will
+want to include application content within the scope of the SWS
+package:
+
+<ol> <li> When developing applications which recycle an object type
+first introduced elsewhere in the system.  <li> When developing
+applications which define their own object types.
+</ol>
+<br>
+
+<h3> II. Scenarios </h3> 
+
+<b> Scenario 1: Applications which recycle object types from elsewhere in the system</b>
+<br>
+
+<br>Procedure:
+<ol>
+   <li> Verify that those application object types within your
+   application which you'd like to make searchable meet the SWS
+   requirements listed below.  <li> For each such searchable object
+   type, provide a display page for that type; see below for details
+   on this..  <li> For each such object type, register this object
+   type and the associated display pages using the pot_service PL/SQL
+   package; see below for details on this.
+</ol>
+
+SWS requirements on object types:
+<ol>
+<li> 
+Object types must implement the sws_display interface.</li>
+<li> 
+Object types must implement the sws_indexing interface and/or store the data in acs_contents.</li>
+</ol>
+
+There are two calls within the acs_interface package, each used to check whether an object type implements an interface:
+<ul>
+<li>object_id_implement_p, which checks whether the object type of an object implements an interface when given an object id, and
+<li>object_type_implement_p, which checks whether the object type implements an interface when given that object type itself.</ul>
+
+An example:
+<pre>
+declare
+    v_implement_p     char(1);
+begin
+    -- 't' or 'f'
+    v_implement_p := object_type_implement_p ('sws_display', 'pl/sql', content_revision);
+end;
+</pre>
+
+If an object type is already in the system yet does
+not support site wide search, this second case explains how to include
+object types within the scope of SWS. Doing so involves modifications
+to the object type package definition and declaration. <b> ***
+Important *** </b> Remember that recompiling the object type package
+declaration in Oracle invalidates those functions and procedures which
+use them, so you'll need to recompile those packages as well.
+<p>
+
+On display page attributes:<p>
+
+After the SWS requirements have been verified for the searchable
+object types, applications will need to register the object types used
+and, for each object type, specify the display page attribute. So for
+each searchable object type there should be a page to handle the
+display for the object type or an appropriate redirect page.
+Consider, for example, a file-storage application built on top of the
+ACS Content Repository.  In that case the file-storage application
+would use the content_revision object type.
+<p>
+
+<pre>
+begin
+    pot_service.register_object_type (
+	package_key		=> 'file-storage',
+	object_type		=> 'content_revision'
+    );
+
+    pot_service.set_obj_type_attr_value (
+	package_key		=> 'file-storage',
+	object_type		=> 'content_revision',
+	attribute		=> 'display_page',
+	attribute_value		=> 'file?file_id='
+    );    
+end;
+</pre> 
+<br>
+
+Note, the display_page attribute is an URL page template.  The URL on
+the search result page will include the object id appended to the end
+of the display_page attribute value.  Reusing an object type already
+set up for site wide search is straightforward; create a page to
+display instances of the object type and register the object type with the
+pot_service.
+
+<br><br> <b> Scenario 2: Developing applications which define their
+own object types.</b><p>
+
+Procedure:
+<ol>
+<li> Implement the sws_display interface methods.  
+<li> Implement the sws_indexing interface if the data is not stored in
+acs_contents or if a preferred searchable representation of the
+data is stored elsewhere.
+<li> Register the object type with the pot_service
+</ol>
+
+<b> 1. Implement sws_display interface methods</b> <p>
+
+In the PL/SQL environment, object types are assumed to have names prefixed by the package.  Thus when an object type implements an
+interface, the methods specified for the interface are
+declared and defined within the object type package itself.  Another option 
+,which avoids modification to the object type package, is have a separate
+package provide the methods.  In the call to register the object type, an optional
+parameter may be provide to specify the package that has the interface methods.   SWS requires
+object types to implement the 'sws_display' interface.  The
+sws_display interface consists of six methods:
+
+<pre>
+    function sws_title (
+	object_id		in acs_objects.object_id%type
+    ) return varchar2;
+
+    function sws_url (
+	object_id           in acs_objects.object_id%type
+    ) return varchar2;
+
+    function sws_summary (
+	object_id		in acs_objects.object_id%type
+    ) return varchar2;
+
+    function sws_req_permission (
+	object_id		in acs_objects.object_id%type
+    ) return varchar2;
+
+    function sws_site_node_id (
+	object_id           in acs_objects.object_id%type
+    ) return site_nodes.node_id%TYPE;
+ 
+    function sws_application_id (
+	object_id	    in acs_objects.object_id%type
+    ) return apm_packages.package_id%TYPE;
+</pre>
+
+The methods sws_title and sws_summary are used to get information to
+display on the search result page. The sws_req_permission retrieves
+the required permission that the user performing the search needs in
+order to view the object on the search page.  The methods sws_url and
+sws_application are used to get the URL information. The last method,
+sws_site_node_id, is used for providing subsite information. For the
+last three methods, sws_url, and sws_application, and
+sws_site_node_id, there are default implementations provided in the
+sws_service_interface PL/SQL package. The default implementation assumes
+that the package id is within the object instance's context tree. This
+distinction is important because certain objects that are used by different
+packages may not have a package id in its context tree.  In cases 
+where the package id is not used as the context id, rewriting these three 
+methods are required. In the sws_url package, the display page provided 
+by the SWS pot package should still be used for determing the display page 
+within the application. 
+
+For default implementation, developers can can just paste the following 
+code for the three methods into their package
+definitions:
+
+<pre>
+    function sws_url (
+	object_id           in acs_objects.object_id%type
+    ) return varchar2
+    is        
+	url			varchar2(3000);	    
+    begin 
+	url := sws_service_interface.sws_url (
+	       object_id	    => object_id 
+	);
+	return url||to_char(object_id);
+    end;
+
+    function sws_site_node_id (
+	object_id           in acs_objects.object_id%type
+    ) return site_nodes.node_id%TYPE
+    is
+	node_id		    site_nodes.node_id%type;
+    begin
+	node_id := sws_service_interface.sws_site_node_id (
+			object_id	    => object_id
+		   );
+	return node_id;         
+    end;
+
+    function sws_application_id (
+	object_id	    in acs_objects.object_id%type
+    ) return apm_packages.package_id%TYPE
+    is
+	v_application_id	apm_packages.package_id%type;
+    begin
+	v_application_id := sws_service_interface.sws_application_id (
+				object_id	=> object_id
+			    );
+	return v_application_id;
+    end;
+</pre>
+
+The methods associated with the sws_service_interface above use
+the pot_service (short for 'package object types') package.  The pot_service
+stores the object type display page for each package.  Given an object
+type and a package, the pot_service provides the relevant display page.
+
+<p>
+
+The last necessary step is to register the object as implementing the
+sws_display interface.
+<pre>
+    begin
+       acs_interface.assoc_obj_type_with_interface (
+           interface_name           => 'sws_display' ,
+	   programming_language     => 'pl/sql'      ,
+           object_type              => '<object_type>',
+	   object_type_imp          => '<package impl>' -- this optional parameter 
+	                                                   specifies another package 
+							   that provides the 
+							   implementation.
+       );
+    end;
+</pre>
+<p>
+
+<b>2. Implement the sws_indexing interface </b> <p>
+
+This interface consists of one method, sws_index_proc (rid, blob). SWS
+uses the sws_indexing interface to provide search functionality to
+allow object types to specify a different content to be indexed
+instead of the one stored in acs_contents table.  If the object type
+does not implement this interface, then the content stored in
+acs_contents is used.  This option can prove useful in scenarios in
+which the textual description of the object is stored in another
+location and the graphic representation is stored in acs_contents or
+when data is stored in a different table then acs_contents. A
+good working example of this is the current ACS Content Repository, wherein 
+content is stored in cr_revisions.  Copying the content from
+cr_revisions to acs_contents would be a waste of space.  Instead of
+copying the data over, for every entry of cr_revisions there is an entry
+in acs_contents with an empty blob.  The code below is added to the
+content_revision package:
+<pre>
+create or replace package body content_revision
+as
+    ....
+    procedure sws_index_proc (
+	object_id	    in acs_objects.object_id%TYPE,
+	bdata		    in out nocopy blob
+    ) 
+    is
+	v_bdata		    blob; 
+	v_size		    integer;
+    begin
+	select content into v_bdata 
+	from cr_revisions 
+	where revision_id = object_id;
+	
+	v_size := dbms_lob.getlength(v_bdata);
+
+	if v_size > 0 then 
+	    dbms_lob.copy (
+		dest_lob    => bdata,
+		src_lob	    => v_bdata,
+		amount	    => v_size
+	    );
+	end if;
+    end sws_index_proc;
+end content_revision;
+</pre>       
+
+Even though the indexed content was stored in another table, there
+still needs to be a row in the acs_contents table. One way of synchronizing
+the table where the data is stored with acs_contents is to use
+insert, update, and delete triggers. The triggers for the
+content_revision type are enumerated below: <br>
+
+<pre>
+create or replace trigger content_revision_itrg
+after insert on cr_revisions
+for each row
+declare
+    v_bdata	blob;
+    v_size	integer;
+begin
+   
+    insert into acs_contents (
+	content_id,
+	searchable_p)
+     values ( 
+	:new.revision_id,
+	't'
+    );
+end;
+/
+
+create or replace trigger content_revision_utrg
+after update on cr_revisions
+for each row
+declare
+    v_bdata	blob;
+    v_size	integer;
+begin
+    update acs_contents 
+    set nls_language    = :new.nls_language,
+	mime_type	= :new.mime_type
+    where content_id	= :new.revision_id;
+end;
+/
+
+create trigger content_revision_dtrg
+after delete on cr_revisions
+for each row
+declare
+begin
+    delete from acs_contents
+    where content_id = :old.revision_id;
+end;
+/
+</pre> 
+
+<br>
+Finally, there needs to be a call to the acs_interface method to register that the object type implements the sws_indexing interface. 
+<br>
+<pre>
+    begin
+       acs_interface.assoc_obj_type_with_interface (
+           interface_name           => 'sws_indexing' ,
+	   programming_language     => 'pl/sql'      ,
+           object_type              => '<object_type>'
+	   object_type_imp          => '<package imp>' -- (optional) provides the implementation in this package
+	                                                   instead of object type package
+	                                                   
+       );
+    end;
+</pre>
+
+<b>Note:</b> this is only optional if the object type does not store its content in acs_contents. 
+<br><br>
+<b>3. Register with the pot service</b> <p>
+
+This process is the same for scenario 1 above.  The application
+registers the object type and the display page for that instance of the object
+type.
+
+<h3> III. Notes </h3>
+
+What happens when a type's supertype supports SWS? Does this imply that the
+type inherits the SWS interface itself?  Since acs_interfaces are not
+inherited, the type must implement the sws_display and sws_indexing
+(only if needed) interfaces. The simplest approach to ensuring that this takes place is to call the
+supertype's methods in the type's package method definitions.  Having
+the subtype provide the interface implementation solves the
+problem of the supertype not supporting SWS. Another solution would
+involve modifying the supertype package to implement the interface.
+As mentioned earlier, changing the supertype package definition would
+invalidate the other functions or methods which use the supertype
+package.  These methods would have to be recompiled.
+
+<h3> 
+IV. Revision History </h3>
+<table CELLSPACING=2 CELLPADDING=2 WIDTH="90%" BGCOLOR="#EFEFEF" >
+<tr BGCOLOR="#E0E0E0">
+<th WIDTH="10%">Document Revision #</th>
+
+<th WIDTH="50%">Action Taken, Notes</th>
+
+<th>When?</th>
+
+<th>By Whom?</th>
+</tr>
+<tr>
+<td>0.1</td>
+<td>Created</td>
+<td>2000-12-19</td>
+<td>Khy Huang</td>
+</tr>
+
+<tr>
+<td>0.2</td>
+<td>First pass edit</td>
+<td>2000-12-19</td>
+<td>Joshua Finkler</td>
+</tr>
+
+<tr>
+<td>0.3</td>
+<td>Add comments on object_type_imp</td>
+<td>2001-01-19</td>
+<td>Khy Huang</td>
+</tr>
+
+</table>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+

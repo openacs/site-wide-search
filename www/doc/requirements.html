@@ -1,0 +1,181 @@
+<html>
+<head>
+   <title> Site Wide Search Requirements </title>
+</head>
+<body bgcolor="white">
+
+<h2>
+Site Wide Search Requirements</h2>
+by <a href="mailto:khy@arsdigita.com">Khy Huang</a>
+<hr>
+<h3>
+I. Introduction</h3>
+This document explains the requirements for the ACS Site Wide Search (SWS)
+application. It describes both the general purpose for and the feature
+level specifications of the SWS application. The SWS application provides
+cross-application ACS searching functionality based upon a variety of user
+inputs.
+<h3>
+II. Vision Statement</h3>
+Web sites that serve a lot of content must provide a searching tool for
+their users to find pages with relevent content. Examples of this are e-commerce sites
+which must help users find products of interest, news providers which must
+help users find articles pertaining to their interests, and collaborative
+community sites which must help users find other users's contributions.
+It is unpleasant to go to a web site to purchase a specific item and end
+up being forced to browse through product categories instead of simply
+entering a key word to locate the desired product. These difficulties are
+especially problematic when the product is categorized in a nonstandard
+way.
+<p>The Site Wide Search (SWS) application provides different methods for
+a user to locate site content. One such method is to simply enter a
+key word and return all pages containing this term. A second method
+allows users to specify the scope of the search. A third method gives
+users the capability to search for theme related content based on the results
+of an initial search.
+<h3>
+System/Application Overview</h3>
+
+<ul>
+<li>
+Intermedia - Intermedia.</li>
+
+<li>
+Application Interface - API for developers to add content from other applications
+to the scope of the search.</li>
+
+<li>
+Subsite - Functionality to search for contents within a sub-site.</li>
+
+<li>
+Query parameters - An admin page to tweak search parameters.</li>
+</ul>
+
+<h3>
+IV. User-Cases</h3>
+
+<ul>
+<li>
+Case 1 - User enters key words to search the web site to find related content. </li>
+<li>
+Case 2 - User is within a content area of the site.  User has option to search the current content area or the whole site (sub-site). </li>
+<li>
+Case 3 - User searches a few areas of the site (i.e. bboard and wimpy point) by entering a keyword. </li>
+<li>
+Case 4 - User searches using exact phases </li>
+<li>
+Case 5 - User searches using boolean operations (and , or ) between entered key words </li>
+<li>
+Case 6 - User searches content with creation date of a particular time. </li>
+<li>
+Case 7 - User wants the search results to display # rows on each page.  For example, users who have small screens usually want to display fewer results per page than those who have large screens. </li>
+<li> 
+Case 8 - User selects the option to display results grouped into content areas </li>
+<li>
+Case 9 - User searches using the combination of methods provided by case 3 to 6 and display options of 7 or 8.  </li>
+<li>
+Case 10 - Admin wants to specify the frequency of resyncing the index. An admin who runs a site with huge network traffic would not want to sync the indexes frequently</li> 
+<li>
+Case 11 - Admin of medical web site wants to load a set of medical themes for the site to improve the search results. </li>
+<li> 
+Case 12 - Admin wants to view statistical reports on searched terms
+</ul>
+
+<h3>
+V. Related Links</h3>
+<i>Not available yet</i>
+<h3>
+VI.A Requirements: Data Model</h3>
+<i>Not available yet</i>
+
+<h3>VI.B Requirements: User-Level Requirements</h3>
+<p><b>30.10</b> User Search Pages
+<p>30.10.10 An embedded search widget which allows users to enter search terms and select site content area.
+<p>30.10.20 Advance search page
+<p>30.10.20.10 Text Box to enter key words 
+<p>30.10.20.20 Keywords support the * as wild cards
+<p>30.10.20.30 An option to select which content areas to include in search
+<p>30.10.20.40 An option to select the type of search. The types are search exact or use boolean operators (and,or,not) between search terms.
+<p>30.10.20.50 An option to select date ranges for content
+<p>30.10.20.60 An option to select subsite
+<p>30.10.20.70 Select the number of rows to display per page
+<p>30.10.20.80 Group by context area option
+<p>30.10.30 Result Page
+<p>30.10.30.10 Display the search results 
+<p>30.10.30.20 Option to show previous and next results 
+<p>30.10.30.30 Option to select the number of items to display on each page
+<p>30.10.30.40 More like this (next to each result item). Other contents with similar themes.
+
+<h3>VI.C Requirements: Admin-Level Requirements</h3>
+
+<b>40.10</b> Admin Pages
+<b>40.10.20 None
+
+<h3>
+VI.D Requirements: Developer-Level Requirements </h3>
+<p><b>50.10</b> SWS Application Interface (facility for developers to include application data in the search repository)
+<p>50.10.10 Interface for setting up package as one of the content area to search
+<p>50.10.20 Interface to add or remove content  
+<p>50.10.30 API for defining permissions required for viewing the content data
+
+
+<h3>
+VII. Revision History</h3>
+
+<table CELLSPACING=2 CELLPADDING=2 WIDTH="90%" BGCOLOR="#EFEFEF" >
+<tr BGCOLOR="#E0E0E0">
+<th WIDTH="10%">Document Revision #</th>
+
+<th WIDTH="50%">Action Taken, Notes</th>
+
+<th>When?</th>
+
+<th>By Whom?</th>
+</tr>
+
+<tr>
+<td>0.1</td>
+
+<td>Created</td>
+
+<td>2000-11-08</td>
+
+<td>Khy Huang</td>
+</tr>
+
+<tr>
+<td>0.2</td>
+
+<td>First pass editing</td>
+
+<td>2000-11-08</td>
+
+<td>Joshua Finkler</td>
+</tr>
+
+<tr>
+<td>0.2</td>
+
+<td>Added more details</td>
+
+<td>2000-11-09</td>
+
+<td>Khy Huang</td>
+</tr>
+
+<tr>
+<td>0.3</td>
+<td>Minor editing</td>
+<td>11/10/2000</td>
+<td>Joshua Finkler</td>
+</tr>
+
+</table>
+
+<p>
+<hr>
+<address>
+<a href="mailto:khy@arsdigita.com">khy@arsdigita.com</a></address>
+
+</body>
+</html>
