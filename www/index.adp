@@ -1,5 +1,5 @@
 <master src="master">
-<property name="context_bar">@context_bar@</property>
 <property name="title">@title@</property>
+<property name="context">@context@</property>
 
 <include src="search-form">

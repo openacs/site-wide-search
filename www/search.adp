@@ -1,6 +1,6 @@
 <master src="master">
-<property name="context_bar">{result}</property>
 <property name="title">Search Results</property>
+<property name="context">result</property>
 
 <if @search_result:rowcount@ gt 0>
     <if @group_by@ eq 1>

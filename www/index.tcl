@@ -9,10 +9,10 @@ ad_page_contract {
     {group_by_p:naturalnum 1}
     {search_methods_p:naturalnum 1}
 } -properties {
-    context_bar:onevalue
+    context:onevalue
 }
 
-set context_bar {}
+set context {}
 
 set title "Search Page"
 

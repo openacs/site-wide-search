@@ -1,6 +1,6 @@
 <master src="master">
-<property name="context_bar">{All Content}</property>
 <property name="title">All Content</property>
+<property name="context">"All Content"</property>
 
 <if @content_list:rowcount@ gt 0>
        <multiple name=content_list>
@@ -14,9 +14,8 @@
        </table>
        </multiple>
 </if>
-
-<if @content_list:rowcount@ eq 0>
+<else>
      Empty content
-</if>
+</else>
     
        
