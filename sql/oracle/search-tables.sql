@@ -477,7 +477,9 @@ create or replace package body sws_service as
 
 	-- construct dynamic sql to build index
 	v_cursor_id := dbms_sql.open_cursor;
-	v_code := 'alter index sws_srch_cts_ds_iidx rebuild online parameters (''sync'')';
+        -- DRB: use the "online" variant if you have Oracle Enterprise Edition
+	-- v_code := 'alter index sws_srch_cts_ds_iidx rebuild online parameters (''sync'')';
+	v_code := 'alter index sws_srch_cts_ds_iidx rebuild parameters (''sync'')';
 	dbms_sql.parse (v_cursor_id, v_code, dbms_sql.native);                     
 	v_result := dbms_sql.execute (v_cursor_id);
 	dbms_sql.close_cursor(v_cursor_id);
