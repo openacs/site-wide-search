@@ -16,7 +16,7 @@ Key Words:</th>
     <tr valign=top><th align=right>Group by:</th>
     <td>
     <formgroup id="grouping">
-    <br>@formgroup.widget@ @formgroup.label@
+    <br>@formgroup.widget;noquote@ @formgroup.label@
     </formgroup>
     </td></tr>
 </if>
@@ -25,7 +25,7 @@ Key Words:</th>
     <tr valign=top><th align=right>
     Searching<br>Method:</th><td>
     <formgroup id="search_methods">
-    <br>@formgroup.widget@ @formgroup.label@
+    <br>@formgroup.widget;noquote@ @formgroup.label@
     </formgroup>
     </td></tr>
 </if>
