@@ -3,7 +3,7 @@ ad_page_contract {
 
     @author Khy Huang (khy@arsdigita.com)
     @creation-date 2000-12-09
-    @cvs-id $Id$	
+    @cvs-id $Id$
 } {
     {subsite_node_option_p:naturalnum 1}
     {group_by_p:naturalnum 1}
