@@ -46,7 +46,7 @@ template::element create search_form search_methods \
 
 if {[template::form is_submission search_form]} {
     ad_returnredirect "search?[export_entire_form_as_url_vars]"
-    return
+    ad_script_abort
 }
 
 ad_return_template
