@@ -235,7 +235,7 @@ is
 	v_attribute_value	pot_obj_type_attr_values.attribute_value%TYPE;
     begin
 	
-	-- retreive the default value for the attribute
+	-- retrieve the default value for the attribute
 	select attribute_value into v_attribute_value
 	from pot_obj_type_attr_values
 	where object_type = pot_service.get_default_attr_value.object_type
