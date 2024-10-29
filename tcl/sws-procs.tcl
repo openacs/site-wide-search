@@ -51,7 +51,7 @@ ad_proc -private sws_package_url {} {
 	return $package_url
     } else {
 	# log an error message
-	ns_log "Notice" "The Site Wide Search package is not mounted."
+	ns_log "Notice" "The Site-Wide Search package is not mounted."
 	return ""
     }
 }

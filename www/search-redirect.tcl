@@ -1,7 +1,7 @@
 # /packages/bboard/www/search-redirect.tcl
 
 ad_page_contract {
-    Page that redirects for site wide search
+    Page that redirects for site-wide search
 
     @author Khy Huang (khy@arsdigita.com)
     @creation-date 2000-01-19
